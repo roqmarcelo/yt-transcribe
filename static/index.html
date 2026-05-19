@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>yt-transcribe</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #181b22;
+      --panel-2: #1f232c;
+      --border: #2a2f3a;
+      --text: #e6e8ec;
+      --muted: #8b909c;
+      --accent: #ff4d4d;
+      --accent-dim: #c93b3b;
+      --ok: #4ade80;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 2.5rem 1.25rem;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    header { margin-bottom: 2rem; }
+    h1 {
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+    }
+    h1 .dot { color: var(--accent); }
+    header p { color: var(--muted); font-size: 0.85rem; margin-top: 0.35rem; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+    label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    input[type="text"], select {
+      width: 100%;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.7rem 0.8rem;
+      border-radius: 6px;
+      outline: none;
+    }
+    input[type="text"]:focus, select:focus { border-color: var(--accent); }
+    .row { display: flex; gap: 0.9rem; margin-top: 1rem; flex-wrap: wrap; }
+    .row > div { flex: 1; min-width: 130px; }
+    .check {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.85rem; color: var(--muted); cursor: pointer;
+    }
+    .check input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+    button {
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 0.75rem 1.4rem;
+      margin-top: 1.25rem;
+      width: 100%;
+    }
+    .btn-primary:hover { background: var(--accent-dim); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: var(--panel-2);
+      border-color: var(--border);
+      color: var(--muted);
+      padding: 0.45rem 0.8rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+    #status { margin-top: 1rem; font-size: 0.85rem; min-height: 1.2rem; }
+    .err { color: var(--accent); }
+    .ok { color: var(--ok); }
+
+    #result { margin-top: 1.5rem; display: none; }
+    .result-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .meta { font-size: 0.75rem; color: var(--muted); }
+    .meta .pill {
+      background: var(--panel-2); border: 1px solid var(--border);
+      padding: 0.1rem 0.5rem; border-radius: 99px; margin-right: 0.35rem;
+    }
+    .actions { display: flex; gap: 0.5rem; }
+    textarea {
+      width: 100%;
+      height: 340px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.83rem;
+      line-height: 1.65;
+      padding: 0.9rem;
+      border-radius: 6px;
+      resize: vertical;
+      outline: none;
+    }
+    footer {
+      margin-top: 2rem; text-align: center;
+      color: var(--muted); font-size: 0.72rem;
+    }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>yt-transcribe<span class="dot">.</span></h1>
+      <p>Fetch YouTube captions — fast, lightweight, no AI.</p>
+    </header>
+
+    <div class="card">
+      <label for="url">YouTube URL or video ID</label>
+      <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=..." autofocus />
+
+      <div class="row">
+        <div>
+          <label for="lang">Language(s)</label>
+          <input type="text" id="lang" value="en" placeholder="en, es" />
+        </div>
+        <div>
+          <label for="format">Format</label>
+          <select id="format">
+            <option value="txt">Plain text</option>
+            <option value="srt">SRT subtitles</option>
+            <option value="vtt">WebVTT</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="check" style="margin-top:1rem;">
+        <input type="checkbox" id="timestamps" />
+        Include timestamps (plain text only)
+      </label>
+
+      <button class="btn-primary" id="go">Transcribe</button>
+      <div id="status"></div>
+    </div>
+
+    <div id="result">
+      <div class="result-head">
+        <div class="meta" id="meta"></div>
+        <div class="actions">
+          <button class="btn-ghost" id="copy">Copy</button>
+          <button class="btn-ghost" id="download">Download</button>
+        </div>
+      </div>
+      <textarea id="output" readonly></textarea>
+    </div>
+
+    <footer>
+      captions only · powered by youtube-transcript-api ·
+      <a href="https://github.com" target="_blank" rel="noopener">source</a>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const go = $("go"), status = $("status"), result = $("result");
+    let lastResult = null;
+
+    async function transcribe() {
+      const url = $("url").value.trim();
+      if (!url) { setStatus("Enter a URL or video ID.", "err"); return; }
+
+      go.disabled = true;
+      setStatus("Fetching captions…", "");
+      result.style.display = "none";
+
+      try {
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url,
+            lang: $("lang").value.trim() || "en",
+            format: $("format").value,
+            timestamps: $("timestamps").checked,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setStatus(data.error || "Request failed.", "err"); return; }
+
+        lastResult = data;
+        $("output").value = data.content;
+        const kind = data.is_generated ? "auto-generated" : "manual";
+        $("meta").innerHTML =
+          `<span class="pill">${data.language} (${data.language_code})</span>` +
+          `<span class="pill">${kind}</span>` +
+          `<span class="pill">${data.segment_count} segments</span>`;
+        result.style.display = "block";
+        setStatus("Done.", "ok");
+      } catch (e) {
+        setStatus("Network error: " + e.message, "err");
+      } finally {
+        go.disabled = false;
+      }
+    }
+
+    function setStatus(msg, cls) {
+      status.textContent = msg;
+      status.className = cls;
+    }
+
+    $("copy").addEventListener("click", async () => {
+      await navigator.clipboard.writeText($("output").value);
+      $("copy").textContent = "Copied!";
+      setTimeout(() => ($("copy").textContent = "Copy"), 1500);
+    });
+
+    $("download").addEventListener("click", () => {
+      if (!lastResult) return;
+      const ext = lastResult.format;
+      const blob = new Blob([lastResult.content], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${lastResult.video_id}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    go.addEventListener("click", transcribe);
+    $("url").addEventListener("keydown", (e) => { if (e.key === "Enter") transcribe(); });
+  </script>
+</body>
+</html>
